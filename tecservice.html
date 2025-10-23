@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TecService - Gestione Interventi Tecnici</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="glass-effect rounded-2xl shadow-2xl p-8 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        TecService
+                    </h1>
+                    <p class="text-gray-600 mt-2 text-lg">Sistema di gestione interventi tecnici</p>
+                </div>
+                <button onclick="apriModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl flex items-center gap-3 transition shadow-lg hover:shadow-xl">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Nuova Segnalazione
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtri -->
+        <div class="glass-effect rounded-2xl shadow-xl p-6 mb-6">
+            <div class="flex items-center gap-3 mb-6">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <h2 class="text-xl font-bold text-gray-800">Filtri</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Urgenza</label>
+                    <select id="filtroUrgenza" onchange="filtraSegnalazioni()" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                        <option value="tutti">Tutte le urgenze</option>
+                        <option value="immediato">Immediato</option>
+                        <option value="urgente">Urgente</option>
+                        <option value="differibile">Differibile</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Stato</label>
+                    <select id="filtroStato" onchange="filtraSegnalazioni()" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                        <option value="tutti">Tutti gli stati</option>
+                        <option value="da prendere in carico">Da prendere in carico</option>
+                        <option value="presa in carico">Presa in carico</option>
+                        <option value="segnalazione risolta">Segnalazione risolta</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista Segnalazioni -->
+        <div id="listaSegnalazioni" class="space-y-4"></div>
+
+        <!-- Statistiche -->
+        <div id="statistiche" class="glass-effect rounded-2xl shadow-xl p-8 mt-6" style="display: none;">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">Statistiche</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-2xl border-2 border-red-200 card-hover">
+                    <p class="text-sm font-semibold text-gray-600 mb-2">Da prendere in carico</p>
+                    <p id="statDaPrendere" class="text-3xl font-bold text-red-600">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-2xl border-2 border-yellow-200 card-hover">
+                    <p class="text-sm font-semibold text-gray-600 mb-2">Prese in carico</p>
+                    <p id="statInCarico" class="text-3xl font-bold text-yellow-600">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border-2 border-green-200 card-hover">
+                    <p class="text-sm font-semibold text-gray-600 mb-2">Risolte</p>
+                    <p id="statRisolte" class="text-3xl font-bold text-green-600">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Nuova Segnalazione -->
+        <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="glass-effect rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-8">
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-8">
+                        Nuova Segnalazione
+                    </h2>
+                    <form id="formSegnalazione" onsubmit="aggiungiSegnalazione(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Nome*</label>
+                                <input type="text" id="nome" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Cognome*</label>
+                                <input type="text" id="cognome" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Ruolo*</label>
+                                <select id="ruolo" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                                    <option value="Docente">Docente</option>
+                                    <option value="Studente">Studente</option>
+                                    <option value="ATA">ATA</option>
+                                    <option value="Altro">Altro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Posizione/Aula*</label>
+                                <input type="text" id="posizione" required placeholder="es. Aula 3A, Lab. Informatica" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Grado di urgenza*</label>
+                            <select id="urgenza" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                                <option value="immediato">Immediato</option>
+                                <option value="urgente">Urgente</option>
+                                <option value="differibile">Differibile</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-8">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Descrizione del problema*</label>
+                            <textarea id="descrizione" required placeholder="Descrivi il problema tecnico in dettaglio..." class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 h-32 focus:border-purple-500 focus:outline-none transition"></textarea>
+                        </div>
+
+                        <div class="flex gap-4 justify-end">
+                            <button type="button" onclick="chiudiModal()" class="px-8 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition font-semibold">
+                                Annulla
+                            </button>
+                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition font-semibold shadow-lg">
+                                Invia Segnalazione
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Password -->
+        <div id="modalPassword" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div class="glass-effect rounded-2xl shadow-2xl max-w-md w-full">
+                <div class="p-8">
+                    <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                        Autenticazione Richiesta
+                    </h2>
+                    <p class="text-gray-600 mb-6">Inserisci la password per modificare lo stato della segnalazione</p>
+                    <form id="formPassword" onsubmit="verificaPassword(event)">
+                        <div class="mb-8">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Password*</label>
+                            <input type="password" id="passwordInput" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none transition">
+                            <p id="errorePassword" class="text-red-600 text-sm mt-3 hidden font-semibold">Password errata!</p>
+                        </div>
+
+                        <div class="flex gap-4 justify-end">
+                            <button type="button" onclick="annullaPassword()" class="px-8 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition font-semibold">
+                                Annulla
+                            </button>
+                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition font-semibold shadow-lg">
+                                Conferma
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, push, set, onValue, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5A6S2xDeMDg3iuACnXS2D3oLdg4fg0bM",
+            authDomain: "tecservice-3a96c.firebaseapp.com",
+            databaseURL: "https://tecservice-3a96c-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "tecservice-3a96c",
+            storageBucket: "tecservice-3a96c.firebasestorage.app",
+            messagingSenderId: "1000342449719",
+            appId: "1:1000342449719:web:14f6a21204efbef6d2d9b2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const segnalazioniRef = ref(database, 'segnalazioni');
+
+        let segnalazioni = [];
+        let cambioStatoPendente = null;
+        const PASSWORD_CORRETTA = "zammy";
+
+        const urgenzaColori = {
+            'immediato': 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg',
+            'urgente': 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg',
+            'differibile': 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+        };
+
+        const statoColori = {
+            'da prendere in carico': 'bg-gradient-to-r from-red-50 to-red-100 text-red-800 border-2 border-red-300',
+            'presa in carico': 'bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-800 border-2 border-yellow-300',
+            'segnalazione risolta': 'bg-gradient-to-r from-green-50 to-green-100 text-green-800 border-2 border-green-300'
+        };
+
+        const prioritaOrdine = {
+            'immediato': 1,
+            'urgente': 2,
+            'differibile': 3
+        };
+
+        onValue(segnalazioniRef, (snapshot) => {
+            segnalazioni = [];
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    segnalazioni.push({
+                        firebaseId: key,
+                        ...data[key]
+                    });
+                });
+            }
+            filtraSegnalazioni();
+        });
+
+        window.apriModal = function() {
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        window.chiudiModal = function() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('formSegnalazione').reset();
+        }
+
+        window.aggiungiSegnalazione = function(e) {
+            e.preventDefault();
+            
+            const nuova = {
+                id: Date.now(),
+                nome: document.getElementById('nome').value,
+                cognome: document.getElementById('cognome').value,
+                ruolo: document.getElementById('ruolo').value,
+                posizione: document.getElementById('posizione').value,
+                urgenza: document.getElementById('urgenza').value,
+                descrizione: document.getElementById('descrizione').value,
+                stato: 'da prendere in carico',
+                dataCreazione: new Date().toLocaleString('it-IT')
+            };
+
+            const newSegnalazioneRef = push(segnalazioniRef);
+            set(newSegnalazioneRef, nuova);
+
+            chiudiModal();
+        }
+
+        window.richiestaPassword = function(firebaseId, nuovoStato, selectElement) {
+            const segnalazione = segnalazioni.find(s => s.firebaseId === firebaseId);
+            if (!segnalazione) return;
+
+            if (segnalazione.stato === nuovoStato) return;
+
+            cambioStatoPendente = {
+                firebaseId: firebaseId,
+                nuovoStato: nuovoStato,
+                statoOriginale: segnalazione.stato,
+                selectElement: selectElement
+            };
+
+            document.getElementById('modalPassword').classList.remove('hidden');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('errorePassword').classList.add('hidden');
+            document.getElementById('passwordInput').focus();
+        }
+
+        window.verificaPassword = function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('passwordInput').value;
+            
+            if (password === PASSWORD_CORRETTA) {
+                if (cambioStatoPendente) {
+                    const segnalazioneRef = ref(database, `segnalazioni/${cambioStatoPendente.firebaseId}`);
+                    update(segnalazioneRef, {
+                        stato: cambioStatoPendente.nuovoStato
+                    });
+                    cambioStatoPendente = null;
+                }
+                document.getElementById('modalPassword').classList.add('hidden');
+            } else {
+                document.getElementById('errorePassword').classList.remove('hidden');
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+
+        window.annullaPassword = function() {
+            if (cambioStatoPendente && cambioStatoPendente.selectElement) {
+                cambioStatoPendente.selectElement.value = cambioStatoPendente.statoOriginale;
+            }
+            cambioStatoPendente = null;
+            document.getElementById('modalPassword').classList.add('hidden');
+        }
+
+        window.filtraSegnalazioni = function() {
+            const filtroUrgenza = document.getElementById('filtroUrgenza').value;
+            const filtroStato = document.getElementById('filtroStato').value;
+
+            let filtrate = segnalazioni
+                .filter(seg => filtroUrgenza === 'tutti' || seg.urgenza === filtroUrgenza)
+                .filter(seg => filtroStato === 'tutti' || seg.stato === filtroStato)
+                .sort((a, b) => prioritaOrdine[a.urgenza] - prioritaOrdine[b.urgenza]);
+
+            mostraSegnalazioni(filtrate);
+            aggiornaStatistiche();
+        }
+
+        function mostraSegnalazioni(lista) {
+            const container = document.getElementById('listaSegnalazioni');
+            
+            if (lista.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-effect rounded-2xl shadow-xl p-12 text-center">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto text-purple-400 mb-4">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p class="text-gray-600 text-xl font-semibold">Nessuna segnalazione trovata</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = lista.map(seg => `
+                <div class="glass-effect rounded-2xl shadow-xl p-8 card-hover">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-3">
+                                <h3 class="text-2xl font-bold text-gray-800">
+                                    ${seg.nome} ${seg.cognome}
+                                </h3>
+                                <span class="px-4 py-2 rounded-xl text-sm font-bold ${urgenzaColori[seg.urgenza]}">
+                                    ${seg.urgenza.toUpperCase()}
+                                </span>
+                            </div>
+                            <div class="flex gap-6 text-sm text-gray-600 mb-4">
+                                <span><strong class="font-semibold">Ruolo:</strong> ${seg.ruolo}</span>
+                                <span><strong class="font-semibold">Posizione:</strong> ${seg.posizione}</span>
+                                <span><strong class="font-semibold">Data:</strong> ${seg.dataCreazione}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200">${seg.descrizione}</p>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-bold text-gray-700">Stato:</span>
+                        <select onchange="richiestaPassword('${seg.firebaseId}', this.value, this)" class="rounded-xl px-5 py-3 font-bold ${statoColori[seg.stato]} focus:outline-none focus:ring-2 focus:ring-purple-500 transition cursor-pointer">
+                            <option value="da prendere in carico" ${seg.stato === 'da prendere in carico' ? 'selected' : ''}>Da prendere in carico</option>
+                            <option value="presa in carico" ${seg.stato === 'presa in carico' ? 'selected' : ''}>Presa in carico</option>
+                            <option value="segnalazione risolta" ${seg.stato === 'segnalazione risolta' ? 'selected' : ''}>Segnalazione risolta</option>
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function aggiornaStatistiche() {
+            const statDiv = document.getElementById('statistiche');
+            
+            if (segnalazioni.length > 0) {
+                statDiv.style.display = 'block';
+                document.getElementById('statDaPrendere').textContent = 
+                    segnalazioni.filter(s => s.stato === 'da prendere in carico').length;
+                document.getElementById('statInCarico').textContent = 
+                    segnalazioni.filter(s => s.stato === 'presa in carico').length;
+                document.getElementById('statRisolte').textContent = 
+                    segnalazioni.filter(s => s.stato === 'segnalazione risolta').length;
+            } else {
+                statDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
